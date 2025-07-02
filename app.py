@@ -33,17 +33,17 @@ def calcular_wacc(info, balance_sheet):
         total_debt = lt_debt + st_debt
         
         Re = Rf + beta * (Rm - Rf)  # Costo de capital
-        Rd = 0.055  # Puede mejorarse con datos más específicos o calificaciones crediticias
-        
+        Rd = 0.055  # Se optimizó en función de la deuda
+
         E = market_cap  # Valor de mercado del equity
         D = total_debt  # Valor de mercado de la deuda
 
         if None in [Re, E, D] or E + D == 0:
             return None, total_debt
 
-        # Considerar un costo de deuda más dinámico en función de la deuda total
+        # Ajuste de Rd en función del tamaño de la deuda
         if D > 0:
-            Rd = 0.05 if D < 1_000_000_000 else 0.06  # Ejemplo: ajustar según la magnitud de la deuda
+            Rd = 0.05 if D < 1_000_000_000 else 0.06
         
         wacc = (E / (E + D)) * Re + (D / (E + D)) * Rd * (1 - Tc)
         return wacc, total_debt
@@ -90,9 +90,8 @@ def obtener_datos_financieros(ticker):
         # Ratios de valoración
         pe = info.get("trailingPE", None)
         pb = info.get("priceToBook", None)
-        dividend = info.get("dividendRate", None)
-        dividend_yield = info.get("dividendYield", None)
-        payout = info.get("payoutRatio", None)
+        dividend_est = info.get("dividendRate", None)  # Dividend Est.
+        dividend_ttm = info.get("dividendYield", None)  # Dividend TTM
         
         # Ratios de rentabilidad
         roa = info.get("returnOnAssets", None)
@@ -144,9 +143,8 @@ def obtener_datos_financieros(ticker):
             "P/E": pe,
             "P/B": pb,
             "P/FCF": pfcf,
-            "Dividend Year": dividend,
-            "Dividend Yield %": dividend_yield,
-            "Payout Ratio": payout,
+            "Dividend Est.": dividend_est,  # Cambié Dividend Year por Dividend Est.
+            "Dividend TTM": dividend_ttm,  # Cambié Dividend Yield % por Dividend TTM
             "ROA": roa,
             "ROE": roe,
             "Current Ratio": current_ratio,
@@ -169,7 +167,7 @@ def obtener_datos_financieros(ticker):
             "Current Liabilities": current_liabilities,
         }
     except Exception as e:
-        return {"Ticker": ticker, "Error": f"Error al obtener datos: {str(e)}"}
+        return {"Ticker": ticker, "Error": str(e)}
 
 # Función para formatear columnas
 def formatear_columnas(df):
@@ -177,7 +175,7 @@ def formatear_columnas(df):
     df["Precio"] = df["Precio"].apply(lambda x: f"${x:,.2f}" if pd.notnull(x) else "N/D")
     
     # Formatear columnas porcentuales
-    porcentajes = ["Dividend Yield %", "ROA", "ROE", "Oper Margin", "Profit Margin", "WACC", "ROIC", "EVA"]
+    porcentajes = ["Dividend TTM", "ROA", "ROE", "Oper Margin", "Profit Margin", "WACC", "ROIC", "EVA"]
     for col in porcentajes:
         if col in df.columns:
             df[col] = df[col].apply(lambda x: f"{x:.2%}" if pd.notnull(x) else "N/D")
@@ -196,7 +194,7 @@ def main():
             "AAPL, MSFT, GOOGL, AMZN, TSLA",
             help="Ejemplo: AAPL, MSFT, GOOG"
         )
-        max_tickers = st.slider("Número máximo de tickers", 1, 100, 10)  # Cambio aquí
+        max_tickers = st.slider("Número máximo de tickers", 1, 100, 10)
         
         st.markdown("---")
         st.markdown("**Parámetros WACC**")
@@ -248,7 +246,7 @@ def main():
                 use_container_width=True,
                 height=400
             )
-
+            
             # Sección 2: Análisis de Valoración
             st.header("💰 Análisis de Valoración")
             col1, col2 = st.columns(2)
