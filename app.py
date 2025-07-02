@@ -93,6 +93,13 @@ def obtener_datos_financieros(ticker):
         dividend_est = info.get("dividendRate", None)  # Dividend Est.
         dividend_ttm = info.get("dividendYield", None)  # Dividend TTM
         
+        # Cálculo de Dividend Est. y Dividend TTM como valores en dólares y porcentaje
+        dividend_est_dollars = dividend_est if dividend_est else None  # Estimación en dólares por acción
+        dividend_est_percent = (dividend_est / price) * 100 if dividend_est and price else None  # Estimación en porcentaje
+        
+        dividend_ttm_dollars = dividend_ttm * price if dividend_ttm and price else None  # Último dividendo en dólares por acción
+        dividend_ttm_percent = (dividend_ttm / price) * 100 if dividend_ttm and price else None  # Rendimiento por dividendo TTM en porcentaje
+        
         # Ratios de rentabilidad
         roa = info.get("returnOnAssets", None)
         roe = info.get("returnOnEquity", None)
@@ -143,8 +150,10 @@ def obtener_datos_financieros(ticker):
             "P/E": pe,
             "P/B": pb,
             "P/FCF": pfcf,
-            "Dividend Est.": dividend_est,  # Cambié Dividend Year por Dividend Est.
-            "Dividend TTM": dividend_ttm,  # Cambié Dividend Yield % por Dividend TTM
+            "Dividend Est. (USD)": dividend_est_dollars,  # Valor en dólares del dividendo estimado
+            "Dividend Est. (%)": dividend_est_percent,  # Estimación de rendimiento por dividendo en porcentaje
+            "Dividend TTM (USD)": dividend_ttm_dollars,  # Último dividendo en dólares
+            "Dividend TTM (%)": dividend_ttm_percent,  # Rendimiento TTM en porcentaje
             "ROA": roa,
             "ROE": roe,
             "Current Ratio": current_ratio,
@@ -174,11 +183,14 @@ def formatear_columnas(df):
     # Formatear valores numéricos
     df["Precio"] = df["Precio"].apply(lambda x: f"${x:,.2f}" if pd.notnull(x) else "N/D")
     
-    # Formatear columnas porcentuales
-    porcentajes = ["Dividend TTM", "ROA", "ROE", "Oper Margin", "Profit Margin", "WACC", "ROIC", "EVA"]
-    for col in porcentajes:
+    # Formatear columnas en dólares y porcentuales
+    dividend_columns = ["Dividend Est. (USD)", "Dividend Est. (%)", "Dividend TTM (USD)", "Dividend TTM (%)"]
+    for col in dividend_columns:
         if col in df.columns:
-            df[col] = df[col].apply(lambda x: f"{x:.2%}" if pd.notnull(x) else "N/D")
+            if "USD" in col:
+                df[col] = df[col].apply(lambda x: f"${x:,.2f}" if pd.notnull(x) else "N/D")
+            elif "%" in col:
+                df[col] = df[col].apply(lambda x: f"{x:.2f}%" if pd.notnull(x) else "N/D")
     
     return df
 
