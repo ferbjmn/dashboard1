@@ -196,7 +196,7 @@ def main():
             "AAPL, MSFT, GOOGL, AMZN, TSLA",
             help="Ejemplo: AAPL, MSFT, GOOG"
         )
-        max_tickers = st.slider("Número máximo de tickers", 1, 100, 10)  # Cambio aquí
+        max_tickers = st.slider("Número máximo de tickers", 1, 100, 10)
         
         st.markdown("---")
         st.markdown("**Parámetros WACC**")
